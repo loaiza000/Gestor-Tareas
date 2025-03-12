@@ -1,13 +1,21 @@
 {
-  "name": "taskflow-app",
+  "name": "gestor-tareas",
   "version": "1.0.0",
   "description": "Aplicación de gestión de tareas con frontend y backend",
-  "main": "start.js",
+  "main": "main.js",
   "scripts": {
-    "start": "node start.js",
-    "install-all": "cd frontend && npm install && cd ../backend && npm install",
-    "build": "cd frontend && npm run dist"
+    "start": "electron .",
+    "clean": "rimraf dist",
+    "pack": "electron-packager . GestorTareas --platform=win32 --arch=x64 --out=dist --overwrite --asar --extra-resource=backend --prune=true",
+    "build": "npm install && cd backend && npm install && cd .. && npm run clean && npm run pack"
   },
   "author": "Daniel Loaiza",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^28.1.0"
+  },
+  "devDependencies": {
+    "electron-packager": "^17.1.2",
+    "rimraf": "^5.0.1"
+  }
 }

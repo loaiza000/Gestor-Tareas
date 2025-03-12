@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'https://cdn.jsdelivr.net/npm/axios@1.3.5/+esm';
 
 const API_URL = 'http://localhost:4001/tarea';
 const SERVER_URL = process.env.SERVER_URL || API_URL;
