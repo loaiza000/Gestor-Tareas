@@ -8,7 +8,7 @@ const tareaSchema = new Schema(
     descripcion: { type: String, required: true },
     estado: {
       type: String,
-      enum: ["Pendiente", "En progreso", "Finalizada"],
+      enum: ["Pendiente", "En progreso", "Completada"],
       default: "Pendiente",
     },
   },
@@ -17,4 +17,4 @@ const tareaSchema = new Schema(
   }
 );
 
-export const tareaModel = model("tarea", tareaSchema);
+export const tareaModel = model("tareas", tareaSchema);

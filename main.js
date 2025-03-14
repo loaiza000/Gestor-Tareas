@@ -7,39 +7,45 @@ let mainWindow = null;
 
 const startBackend = () => {
   const isDev = !app.isPackaged;
-  const backendPath = isDev 
-    ? path.join(__dirname, 'backend')
-    : path.join(process.resourcesPath, 'backend');
-
+  const backendPath = isDev ? 
+    path.join(__dirname, 'backend') : 
+    path.join(process.resourcesPath, 'backend');
+  
   console.log('Iniciando backend en:', backendPath);
-  
-  const startCmd = isDev ? ['npm', ['start']] : ['node', ['src/index.js']];
-  
-  backendProcess = spawn(startCmd[0], startCmd[1], {
+
+  backendProcess = spawn('npm', ['start'], {
     cwd: backendPath,
     shell: true,
-    stdio: 'pipe',
-    windowsHide: true,
     env: {
       ...process.env,
-      NODE_ENV: isDev ? 'development' : 'production',
-      PORT: 4001
+      PORT: 4001,
+      DB_URI: 'mongodb://127.0.0.1:27017/gestionTareas'
     }
   });
 
   backendProcess.stdout.on('data', (data) => {
-    console.log(`Backend: ${data}`);
-    if (data.toString().includes('Escuchando por el puerto')) {
+    console.log('Backend:', data.toString());
+    if (data.toString().includes('Server running on port')) {
       mainWindow.loadFile(path.join(__dirname, 'frontend', 'src', 'index.html'));
     }
   });
 
   backendProcess.stderr.on('data', (data) => {
-    console.error(`Backend Error: ${data}`);
+    console.error('Backend Error:', data.toString());
+  });
+
+  backendProcess.on('close', (code) => {
+    console.log('Backend process exited with code:', code);
+    if (code !== 0 && !isDev) {
+      app.quit();
+    }
   });
 
   backendProcess.on('error', (err) => {
-    console.error('Error al iniciar el backend:', err);
+    console.error('Failed to start backend:', err);
+    if (!isDev) {
+      app.quit();
+    }
   });
 };
 
@@ -47,7 +53,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
-    title: 'Gestor de Tareas',
+    title: 'TaskFlow Pro',
     autoHideMenuBar: true,
     frame: true,
     icon: path.join(__dirname, 'frontend', 'build', 'icon.ico'),
@@ -62,26 +68,29 @@ const createWindow = () => {
 
   // Iniciar el backend
   startBackend();
-
-  // Abrir DevTools en desarrollo
-  if (!app.isPackaged) {
-    mainWindow.webContents.openDevTools();
-  }
 };
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
 
 app.on('window-all-closed', () => {
-  if (backendProcess) {
-    backendProcess.kill();
-  }
   if (process.platform !== 'darwin') {
+    if (backendProcess) {
+      backendProcess.kill();
+    }
     app.quit();
   }
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+process.on('exit', () => {
+  if (backendProcess) {
+    backendProcess.kill();
   }
 });

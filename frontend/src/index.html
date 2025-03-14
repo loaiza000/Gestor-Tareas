@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de Tareas</title>
+  <title>TaskFlow Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     @keyframes glow {
       0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
@@ -13,32 +15,187 @@
     .author-signature {
       animation: glow 3s ease-in-out infinite;
     }
+    .nav-btn {
+      position: relative;
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      border-radius: 0.5rem;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-btn:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(148, 163, 184, 0.2);
+      color: #e2e8f0;
+      transform: translateY(-1px);
+    }
+    .nav-btn.active {
+      background: rgba(37, 99, 235, 0.1);
+      border-color: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+    }
+    .nav-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0) 0%, rgba(37, 99, 235, 0.8) 50%, rgba(37, 99, 235, 0) 100%);
+    }
+    .nav-btn i {
+      font-size: 1rem;
+      transition: transform 0.2s ease;
+    }
+    .nav-btn:hover i {
+      transform: scale(1.1);
+    }
+    .app-title {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .app-title::before {
+      content: '';
+      position: absolute;
+      inset: -0.5rem;
+      background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 70%);
+      border-radius: 1rem;
+      z-index: -1;
+    }
+    .app-title i {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+    }
+    .app-title span {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+    .app-title .pro-badge {
+      font-size: 0.875rem;
+      padding: 0.25rem 0.75rem;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.2) 100%);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 1rem;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
   </style>
 </head>
 
 <body class="h-full bg-gradient-to-br from-gray-800 to-gray-900 min-h-screen font-sans">
-  <div class="max-w-5xl mx-auto py-10 px-8">
-    <h1 class="text-4xl font-bold text-white mb-8 text-center">Gestor de Tareas</h1>
-
-    <div class="bg-gray-700/50 backdrop-blur-lg p-6 rounded-xl shadow-lg mb-10 border border-gray-600">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <input type="text" id="titulo" placeholder="Título de la tarea" 
-          class="w-full px-4 py-3 rounded-lg border-2 border-gray-600 bg-gray-800/50 focus:border-gray-400 focus:ring-2 focus:ring-gray-500 transition-all duration-200 outline-none text-white text-lg placeholder-gray-400">
-        
-        <input type="text" id="descripcion" placeholder="Descripción de la tarea" 
-          class="w-full px-4 py-3 rounded-lg border-2 border-gray-600 bg-gray-800/50 focus:border-gray-400 focus:ring-2 focus:ring-gray-500 transition-all duration-200 outline-none text-white placeholder-gray-400">
+  <div class="max-w-7xl mx-auto py-10 px-8">
+    <!-- Navigation -->
+    <nav class="flex justify-between items-center mb-8">
+      <h1 class="app-title text-4xl font-bold">
+        <i class="fas fa-layer-group"></i>
+        <span>TaskFlow</span>
+        <div class="pro-badge">Pro</div>
+      </h1>
+      <div class="flex space-x-4">
+        <button onclick="showTab('tareas')" id="tab-tareas" class="nav-btn active">
+          <i class="fas fa-tasks"></i>
+          Tareas
+        </button>
+        <button onclick="showTab('notas')" id="tab-notas" class="nav-btn">
+          <i class="fas fa-sticky-note"></i>
+          Notas
+        </button>
       </div>
-      
-      <button id="btnCrear" 
-        class="w-full md:w-auto flex items-center justify-center bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 font-semibold border border-gray-600">
-        <span class="mr-2 text-xl">+</span> Nueva Tarea
-      </button>
+    </nav>
+
+    <!-- Sección de Tareas -->
+    <div id="tareas-section" class="space-y-8">
+      <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-xl">
+        <h2 class="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
+          <i class="fas fa-plus-circle text-blue-500"></i>
+          Nueva Tarea
+        </h2>
+        <form id="task-form" class="space-y-4">
+          <div class="space-y-2">
+            <label for="title" class="block text-sm font-medium text-gray-300">Título</label>
+            <input type="text" id="title" name="title" required
+              class="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all"
+              placeholder="Ingrese el título de la tarea">
+          </div>
+          <div class="space-y-2">
+            <label for="description" class="block text-sm font-medium text-gray-300">Descripción</label>
+            <textarea id="description" name="description" rows="3" required
+              class="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all resize-none"
+              placeholder="Ingrese la descripción de la tarea"></textarea>
+          </div>
+          <button type="submit"
+            class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+            <i class="fas fa-save"></i>
+            Guardar Tarea
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-xl">
+        <h2 class="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
+          <i class="fas fa-tasks text-blue-500"></i>
+          Tareas Pendientes
+        </h2>
+        <div id="task-list" class="space-y-4">
+          <!-- Las tareas se insertarán aquí dinámicamente -->
+        </div>
+      </div>
     </div>
 
-    <div id="lista-tareas" class="space-y-4"></div>
-    
-    <!-- Contenedor para la paginación -->
-    <div id="pagination" class="flex justify-center items-center gap-2 mt-6"></div>
+    <!-- Sección de Notas -->
+    <div id="notas-section" class="space-y-8 hidden">
+      <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-xl">
+        <h2 class="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
+          <i class="fas fa-plus-circle text-blue-500"></i>
+          Nueva Nota
+        </h2>
+        <form id="note-form" class="space-y-4">
+          <div class="space-y-2">
+            <label for="note-title" class="block text-sm font-medium text-gray-300">Título</label>
+            <input type="text" id="note-title" name="title" required
+              class="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all"
+              placeholder="Ingrese el título de la nota">
+          </div>
+          <div class="space-y-2">
+            <label for="note-content" class="block text-sm font-medium text-gray-300">Contenido</label>
+            <textarea id="note-content" name="content" rows="3" required
+              class="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 transition-all resize-none"
+              placeholder="Ingrese el contenido de la nota"></textarea>
+          </div>
+          <button type="submit"
+            class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+            <i class="fas fa-save"></i>
+            Guardar Nota
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-xl">
+        <h2 class="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
+          <i class="fas fa-sticky-note text-blue-500"></i>
+          Notas Guardadas
+        </h2>
+        <div id="note-list" class="space-y-4">
+          <!-- Las notas se insertarán aquí dinámicamente -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Firma del autor -->
@@ -51,22 +208,19 @@
     </div>
   </div>
 
-  <script src="renderer.js" type="module" defer></script>
+  <script type="module" src="renderer.js"></script>
 
   <style>
-    /* Asegurarse de que los inputs sean editables */
-    input[type="text"] {
+    input[type="text"], textarea {
       -webkit-user-select: text !important;
       user-select: text !important;
       -webkit-app-region: no-drag;
     }
     
-    /* Prevenir que el fondo sea arrastrable */
     body {
       -webkit-app-region: no-drag;
     }
 
-    /* Estilos para botones deshabilitados */
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
