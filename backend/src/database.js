@@ -7,7 +7,7 @@ export const connectDB = async () => {
     mongoose.set('strictQuery', false);
     const db = await mongoose.connect(uri);
     console.log("Base de datos conectada:", db.connection.name);
-    console.log("Colecciones disponibles:", Object.keys(db.connection.collections));
+
   } catch (error) {
     console.error("Error al conectar a la base de datos:", error.message);
   }

@@ -11,6 +11,10 @@ const tareaSchema = new Schema(
       enum: ["Pendiente", "En progreso", "Completada"],
       default: "Pendiente",
     },
+    creador: { type: mongoose.Types.ObjectId, ref: "usuario" },
+    asignados: { type: mongoose.Types.ObjectId, ref: "usuario" },
+    colaboradores: { type: mongoose.Types.ObjectId, ref: "usuario" },
+    comentarios: { type: mongoose.Types.ObjectId, ref: "comentario" },
   },
   {
     timestamps: true,

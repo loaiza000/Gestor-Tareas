@@ -1,5 +1,15 @@
 // Configuración de la API
 const API_URL = 'http://localhost:4001';
+let authToken = localStorage.getItem('token');
+
+// Configuración de Axios
+axios.defaults.baseURL = API_URL;
+axios.interceptors.request.use(config => {
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
+  }
+  return config;
+});
 
 // Estados de tareas con sus clases
 const taskStates = {
@@ -113,13 +123,194 @@ const createNoteElement = (note) => {
   return div;
 };
 
+// UI Helpers
+const showError = (message) => {
+  console.error('Mostrando error:', message);
+  const errorDiv = document.getElementById('error-message');
+  errorDiv.textContent = message;
+  errorDiv.classList.remove('hidden');
+  setTimeout(() => {
+    errorDiv.classList.add('hidden');
+  }, 5000);
+};
+
+const showSuccess = (message) => {
+  console.log('Mostrando éxito:', message);
+  const successDiv = document.getElementById('success-message');
+  successDiv.textContent = message;
+  successDiv.classList.remove('hidden');
+  setTimeout(() => {
+    successDiv.classList.add('hidden');
+  }, 5000);
+};
+
+const showLoginForm = () => {
+  console.log('Mostrando formulario de login');
+  document.getElementById('auth-section').classList.remove('hidden');
+  document.getElementById('app-section').classList.add('hidden');
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('register-form').classList.add('hidden');
+  
+  // Limpiar formularios
+  document.getElementById('login-form').reset();
+  document.getElementById('register-form').reset();
+};
+
+const showRegisterForm = () => {
+  console.log('Mostrando formulario de registro');
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('register-form').classList.remove('hidden');
+};
+
+const showApp = () => {
+  console.log('Mostrando aplicación principal');
+  const userName = localStorage.getItem('userName');
+  console.log('Nombre de usuario:', userName);
+  
+  // Ocultar sección de autenticación
+  const authSection = document.getElementById('auth-section');
+  const appSection = document.getElementById('app-section');
+  
+  console.log('Estado inicial - auth-section:', authSection.classList.contains('hidden'));
+  console.log('Estado inicial - app-section:', appSection.classList.contains('hidden'));
+  
+  authSection.classList.add('hidden');
+  appSection.classList.remove('hidden');
+  
+  console.log('Estado final - auth-section:', authSection.classList.contains('hidden'));
+  console.log('Estado final - app-section:', appSection.classList.contains('hidden'));
+  
+  // Actualizar nombre de usuario
+  document.getElementById('user-name').textContent = userName;
+  
+  // Mostrar pestaña de tareas por defecto
+  showTab('tasks');
+  
+  // Cargar datos
+  loadTasks();
+  loadNotes();
+};
+
+// Función para mostrar/ocultar pestañas
+const showTab = (tabName) => {
+  console.log('Cambiando a pestaña:', tabName);
+  
+  // Actualizar botones de navegación
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Ocultar todas las secciones
+  const tasksSection = document.getElementById('tasks-section');
+  const notesSection = document.getElementById('notes-section');
+  
+  console.log('Estado inicial - tasks-section:', tasksSection.classList.contains('hidden'));
+  console.log('Estado inicial - notes-section:', notesSection.classList.contains('hidden'));
+  
+  tasksSection.classList.add('hidden');
+  notesSection.classList.add('hidden');
+
+  // Mostrar la sección seleccionada
+  document.getElementById(`${tabName}-section`).classList.remove('hidden');
+  
+  console.log('Estado final - tasks-section:', tasksSection.classList.contains('hidden'));
+  console.log('Estado final - notes-section:', notesSection.classList.contains('hidden'));
+};
+
+// Funciones de autenticación
+const login = async (email, password) => {
+  try {
+    console.log('Intentando login con:', email);
+    const response = await axios.post('/usuario/login', { email, password });
+    console.log('Respuesta del servidor:', response.data);
+
+    if (response.data.success) {
+      const { token, user } = response.data.data;
+      console.log('Login exitoso:', { user });
+      
+      // Guardar datos del usuario
+      authToken = token;
+      localStorage.setItem('token', token);
+      localStorage.setItem('userId', user._id);
+      localStorage.setItem('userName', user.nombre);
+      
+      // Actualizar la UI
+      document.getElementById('user-name').textContent = user.nombre;
+      
+      // Ocultar sección de autenticación y mostrar app
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('app-section').classList.remove('hidden');
+      
+      showSuccess('¡Bienvenido ' + user.nombre + '!');
+      
+      // Cargar datos iniciales
+      showTab('tasks');
+      loadTasks();
+      loadNotes();
+    } else {
+      console.error('Error en respuesta:', response.data.message);
+      showError(response.data.message || 'Error al iniciar sesión');
+    }
+  } catch (error) {
+    console.error('Error completo:', error);
+    showError(error.response?.data?.message || 'Error al conectar con el servidor');
+  }
+};
+
+const verifyToken = async () => {
+  try {
+    const response = await axios.get('/usuario/verify');
+    if (response.data.success) {
+      console.log('Token válido, mostrando app');
+      showApp();
+    } else {
+      console.log('Token inválido, mostrando login');
+      showLoginForm();
+    }
+  } catch (error) {
+    console.error('Error al verificar token:', error);
+    showLoginForm();
+  }
+};
+
+const register = async (nombre, email, password) => {
+  try {
+    console.log('Intentando registro con:', { nombre, email });
+    const response = await axios.post('/usuario/register', { nombre, email, password });
+    
+    if (response.data.success) {
+      showSuccess('Registro exitoso. Por favor inicia sesión.');
+      showLoginForm();
+    } else {
+      showError(response.data.message || 'Error al registrarse');
+    }
+  } catch (error) {
+    console.error('Error en registro:', error);
+    showError(error.response?.data?.message || 'Error al registrarse');
+  }
+};
+
+const logout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('userName');
+  authToken = null;
+  showLoginForm();
+  showSuccess('Sesión cerrada correctamente');
+};
+
 // Cargar tareas
 const loadTasks = async () => {
   try {
-    const response = await axios.get(`${API_URL}/tarea`);
+    const response = await axios.get('/tareas');
     const taskList = document.getElementById('task-list');
     taskList.innerHTML = '';
-    if (response.data.data) {
+
+    if (response.data.success) {
       response.data.data.forEach(task => {
         const taskElement = createTaskElement(task);
         taskList.appendChild(taskElement);
@@ -128,67 +319,27 @@ const loadTasks = async () => {
     }
   } catch (error) {
     console.error('Error al cargar tareas:', error);
-  }
-};
-
-// Cargar notas
-const loadNotes = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/notes`);
-    const noteList = document.getElementById('note-list');
-    noteList.innerHTML = '';
-    if (response.data.data) {
-      response.data.data.forEach(note => {
-        const noteElement = createNoteElement(note);
-        noteList.appendChild(noteElement);
-        fadeInAnimation(noteElement);
-      });
-    }
-  } catch (error) {
-    console.error('Error al cargar notas:', error);
+    showError('Error al cargar las tareas');
   }
 };
 
 // Crear tarea
-document.getElementById('task-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const titulo = document.getElementById('title').value;
-  const descripcion = document.getElementById('description').value;
-
+const createTask = async (titulo, descripcion) => {
   try {
-    await axios.post(`${API_URL}/tarea`, {
-      titulo,
-      descripcion,
-      estado: 'Pendiente'
-    });
-    document.getElementById('title').value = '';
-    document.getElementById('description').value = '';
-    await loadTasks();
+    const response = await axios.post('/tareas', { titulo, descripcion });
+    const taskElement = createTaskElement(response.data.data);
+    document.getElementById('task-list').appendChild(taskElement);
+    fadeInAnimation(taskElement);
+    showSuccess('Tarea creada exitosamente');
   } catch (error) {
-    console.error('Error al crear tarea:', error);
+    showError('Error al crear tarea: ' + error.message);
   }
-});
-
-// Crear nota
-document.getElementById('note-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const title = document.getElementById('note-title').value;
-  const content = document.getElementById('note-content').value;
-
-  try {
-    await axios.post(`${API_URL}/notes`, { title, content });
-    document.getElementById('note-title').value = '';
-    document.getElementById('note-content').value = '';
-    await loadNotes();
-  } catch (error) {
-    console.error('Error al crear nota:', error);
-  }
-});
+};
 
 // Actualizar estado de tarea
 window.updateTaskState = async (id, estado) => {
   try {
-    await axios.put(`${API_URL}/tarea/${id}`, { estado });
+    await axios.put(`/tareas/${id}`, { estado });
     await loadTasks();
   } catch (error) {
     console.error('Error al actualizar estado:', error);
@@ -198,7 +349,7 @@ window.updateTaskState = async (id, estado) => {
 // Eliminar tarea
 window.deleteTask = async (id) => {
   try {
-    await axios.delete(`${API_URL}/tarea/${id}`);
+    await axios.delete(`/tareas/${id}`);
     await loadTasks();
   } catch (error) {
     console.error('Error al eliminar tarea:', error);
@@ -208,33 +359,115 @@ window.deleteTask = async (id) => {
 // Eliminar nota
 window.deleteNote = async (id) => {
   try {
-    await axios.delete(`${API_URL}/notes/${id}`);
+    await axios.delete(`/notas/${id}`);
     await loadNotes();
   } catch (error) {
     console.error('Error al eliminar nota:', error);
   }
 };
 
-// Función para cambiar entre pestañas
-window.showTab = (tab) => {
-  const sections = {
-    'tareas': document.getElementById('tareas-section'),
-    'notas': document.getElementById('notas-section')
-  };
-  const buttons = {
-    'tareas': document.getElementById('tab-tareas'),
-    'notas': document.getElementById('tab-notas')
-  };
+// Cargar notas
+const loadNotes = async () => {
+  try {
+    const response = await axios.get('/notas');
+    const noteList = document.getElementById('note-list');
+    noteList.innerHTML = '';
 
-  Object.values(sections).forEach(section => section.classList.add('hidden'));
-  Object.values(buttons).forEach(button => button.classList.remove('active'));
-
-  sections[tab].classList.remove('hidden');
-  buttons[tab].classList.add('active');
+    if (response.data.success) {
+      response.data.data.forEach(note => {
+        const noteElement = createNoteElement(note);
+        noteList.appendChild(noteElement);
+        fadeInAnimation(noteElement);
+      });
+    }
+  } catch (error) {
+    console.error('Error al cargar notas:', error);
+    showError('Error al cargar las notas');
+  }
 };
 
-// Cargar datos iniciales
+// Crear nota
+document.getElementById('note-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = document.getElementById('note-title').value;
+  const content = document.getElementById('note-content').value;
+
+  try {
+    await axios.post('/notas', { title, content });
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-content').value = '';
+    await loadNotes();
+  } catch (error) {
+    console.error('Error al crear nota:', error);
+  }
+});
+
+// Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-  loadTasks();
-  loadNotes();
+  console.log('DOM cargado, configurando listeners...');
+
+  // Formulario de login
+  const loginForm = document.getElementById('login-form');
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('Formulario de login enviado');
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    await login(email, password);
+  });
+
+  // Botones de navegación entre login y registro
+  document.getElementById('show-login').addEventListener('click', () => {
+    console.log('Click en mostrar login');
+    showLoginForm();
+  });
+
+  document.getElementById('show-register').addEventListener('click', () => {
+    console.log('Click en mostrar registro');
+    showRegisterForm();
+  });
+
+  // Formulario de registro
+  const registerForm = document.getElementById('register-form');
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById('register-name').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    await register(nombre, email, password);
+  });
+
+  // Botón de logout
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    console.log('Click en logout');
+    logout();
+  });
+
+  // Botones de navegación de pestañas
+  document.querySelectorAll('[data-tab]').forEach(button => {
+    button.addEventListener('click', () => {
+      const tabName = button.dataset.tab;
+      console.log('Cambiando a pestaña:', tabName);
+      showTab(tabName);
+    });
+  });
+
+  // Verificar si hay token guardado
+  const token = localStorage.getItem('token');
+  if (token) {
+    console.log('Token encontrado, verificando...');
+    verifyToken();
+  } else {
+    console.log('No hay token, mostrando login');
+    showLoginForm();
+  }
+});
+
+// Task form
+document.getElementById('task-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const titulo = document.getElementById('title').value;
+  const descripcion = document.getElementById('description').value;
+  await createTask(titulo, descripcion);
+  e.target.reset();
 });

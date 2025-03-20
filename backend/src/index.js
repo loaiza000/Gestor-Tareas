@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 import { connectDB } from "./database.js";
 import tareaRouter from "./routes/tarea.routes.js";
 import notesRouter from "./routes/notes.routes.js";
+import usuarioRouter from "./routes/usuario.routes.js";
+import comentarioRouter from "./routes/comentario.routes.js";
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.use(express.urlencoded({ extended: false }));
 // API Routes
 app.use("/tarea", tareaRouter);
 app.use("/notes", notesRouter);
+app.use("/usuario", usuarioRouter);
+app.use("/comentario", comentarioRouter);
 
 // Connect to database
 connectDB();

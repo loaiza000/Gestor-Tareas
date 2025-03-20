@@ -5,6 +5,23 @@ const { spawn } = require('child_process');
 let backendProcess = null;
 let mainWindow = null;
 
+const createWindow = () => {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    frame: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    backgroundColor: '#1a1b1e'
+  });
+
+  // Cargar la pantalla de carga primero
+  mainWindow.loadFile(path.join(__dirname, 'frontend', 'src', 'loading.html'));
+  startBackend();
+};
+
 const startBackend = () => {
   const isDev = !app.isPackaged;
   const backendPath = isDev ? 
@@ -12,6 +29,15 @@ const startBackend = () => {
     path.join(process.resourcesPath, 'backend');
   
   console.log('Iniciando backend en:', backendPath);
+
+  // Asegurarse de que el proceso anterior esté cerrado
+  if (backendProcess) {
+    try {
+      backendProcess.kill();
+    } catch (err) {
+      console.error('Error al cerrar el proceso anterior:', err);
+    }
+  }
 
   backendProcess = spawn('npm', ['start'], {
     cwd: backendPath,
@@ -23,10 +49,15 @@ const startBackend = () => {
     }
   });
 
+  let serverStarted = false;
+
   backendProcess.stdout.on('data', (data) => {
     console.log('Backend:', data.toString());
-    if (data.toString().includes('Server running on port')) {
-      mainWindow.loadFile(path.join(__dirname, 'frontend', 'src', 'index.html'));
+    if (data.toString().includes('Server running on port') && !serverStarted) {
+      serverStarted = true;
+      setTimeout(() => {
+        mainWindow.loadFile(path.join(__dirname, 'frontend', 'src', 'index.html'));
+      }, 1000); // Esperar 1 segundo antes de cargar la interfaz principal
     }
   });
 
@@ -49,36 +80,7 @@ const startBackend = () => {
   });
 };
 
-const createWindow = () => {
-  mainWindow = new BrowserWindow({
-    width: 900,
-    height: 600,
-    title: 'TaskFlow Pro',
-    autoHideMenuBar: true,
-    frame: true,
-    icon: path.join(__dirname, 'frontend', 'build', 'icon.ico'),
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
-  });
-
-  // Mostrar pantalla de carga mientras el backend inicia
-  mainWindow.loadFile(path.join(__dirname, 'frontend', 'src', 'loading.html'));
-
-  // Iniciar el backend
-  startBackend();
-};
-
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -89,8 +91,8 @@ app.on('window-all-closed', () => {
   }
 });
 
-process.on('exit', () => {
-  if (backendProcess) {
-    backendProcess.kill();
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
   }
 });

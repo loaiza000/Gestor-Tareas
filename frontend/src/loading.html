@@ -1,31 +1,29 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full bg-gray-900">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargando - Gestor de Tareas</title>
+    <title>Iniciando Gestor de Tareas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .loading-dot {
-            animation: loading 1.4s infinite both;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
-        .loading-dot:nth-child(2) { animation-delay: 0.2s; }
-        .loading-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes loading {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+        .loading-dot {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 </head>
-<body class="bg-gray-900 min-h-screen flex items-center justify-center">
+<body class="h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
     <div class="text-center">
-        <h1 class="text-3xl font-bold text-white mb-8">Iniciando Gestor de Tareas</h1>
-        <div class="flex justify-center gap-2">
-            <div class="loading-dot w-4 h-4 bg-blue-500 rounded-full"></div>
-            <div class="loading-dot w-4 h-4 bg-blue-500 rounded-full"></div>
-            <div class="loading-dot w-4 h-4 bg-blue-500 rounded-full"></div>
+        <h1 class="text-3xl font-bold text-white mb-4">Iniciando Gestor de Tareas</h1>
+        <p class="text-gray-400 mb-8">Por favor espera mientras se inicia el servidor...</p>
+        <div class="flex justify-center space-x-2">
+            <div class="w-3 h-3 bg-blue-500 rounded-full loading-dot" style="animation-delay: 0s"></div>
+            <div class="w-3 h-3 bg-blue-500 rounded-full loading-dot" style="animation-delay: 0.2s"></div>
+            <div class="w-3 h-3 bg-blue-500 rounded-full loading-dot" style="animation-delay: 0.4s"></div>
         </div>
-        <p class="text-gray-400 mt-4">Por favor espera mientras se inicia el servidor...</p>
     </div>
 </body>
 </html>
